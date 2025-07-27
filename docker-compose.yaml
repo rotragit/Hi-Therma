@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  hnet-decoder:
+    build: .
+    container_name: hisense-hnet-decoder
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER=${MQTT_BROKER:-localhost}
+      - MQTT_PORT=${MQTT_PORT:-1883}
+      - MQTT_TOPIC=${MQTT_TOPIC:-hisense/hnet/raw}
+      - MQTT_USER=${MQTT_USER:-}
+      - MQTT_PASSWORD=${MQTT_PASSWORD:-}
+      - PUBLISH_PREFIX=${PUBLISH_PREFIX:-PDC}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./config:/app/config:ro
+      - ./logs:/app/logs
+      - ./src:/app/src
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

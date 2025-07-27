@@ -1,0 +1,83 @@
+# Configurazione Hisense H-NET Protocol Decoder
+
+mqtt:
+  broker: "${MQTT_BROKER:-localhost}"
+  port: ${MQTT_PORT:-1883}
+  username: "${MQTT_USER:-}"
+  password: "${MQTT_PASSWORD:-}"
+  
+  # Topic di input per i frame raw
+  input_topic: "${MQTT_TOPIC:-hisense/hnet/raw}"
+  
+  # Prefisso per i topic di output
+  publish_prefix: "${PUBLISH_PREFIX:-PDC}"
+  
+  # Configurazioni MQTT avanzate
+  keepalive: 60
+  qos: 1
+  retain: true
+  reconnect_delay: 5
+
+# Configurazione protocollo H-NET
+hnet:
+  # Indirizzi dispositivi
+  indoor_controller_addr: 0x21
+  outdoor_unit_addr: 0x12
+  
+  # Opcode supportati
+  supported_opcodes:
+    - 0xB1  # Status messages
+    - 0xB6  # Sensor data
+    - 0xB8  # System info
+  
+  # Valore utilizzato per indicare dati non validi
+  invalid_sensor_value: 129
+
+# Configurazione logging
+logging:
+  level: "${LOG_LEVEL:-INFO}"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "/app/logs/hnet_decoder.log"
+  max_size: "10MB"
+  backup_count: 5
+
+# Configurazione debug
+debug:
+  print_raw_frames: true
+  save_unknown_frames: true
+  unknown_frames_file: "/app/logs/unknown_frames.log"
+
+# Configurazione topic MQTT di output
+topics:
+  indoor:
+    status: "indoor/status"
+    operation_command: "indoor/operation_command"
+    mode: "indoor/mode"
+    cycle_status: "indoor/cycle_status"
+    water_setpoint: "indoor/water_setpoint"
+    dhw_setpoint: "indoor/dhw_setpoint"
+    pool_setpoint: "indoor/pool_setpoint"
+    ambient_setpoint: "indoor/ambient_setpoint"
+    indoor_temperature_1: "indoor/indoor_temperature_1"
+    indoor_temperature_2: "indoor/indoor_temperature_2"
+    system_datetime: "indoor/system_datetime"
+    
+  outdoor:
+    status: "outdoor/status"
+    pump_status: "outdoor/pump_status"
+    inverter_frequency: "outdoor/inverter_frequency"
+    evo_current: "outdoor/evo_current"
+    
+  sensors:
+    water_inlet_temperature: "sensors/water_inlet_temperature"
+    water_outlet_temperature_1: "sensors/water_outlet_temperature_1"
+    water_outlet_temperature_2: "sensors/water_outlet_temperature_2"
+    heat_exchanger_outlet_temperature: "sensors/heat_exchanger_outlet_temperature"
+    ambient_temperature: "sensors/ambient_temperature"
+    ambient_temperature_avg: "sensors/ambient_temperature_avg"
+    gas_ui_temperature: "sensors/gas_ui_temperature"
+    liquid_ui_temperature: "sensors/liquid_ui_temperature"
+    water_flow: "sensors/water_flow"
+    water_speed: "sensors/water_speed"
+    exhaust_temperature: "sensors/exhaust_temperature"
+    liquid_evaporation_temperature: "sensors/liquid_evaporation_temperature"
