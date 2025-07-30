@@ -293,7 +293,8 @@ class HNetProtocolDecoder:
             # Sensori sistema outdoor
             {"domain": "sensor", "id": "outdoor/pump_status", "name": "Outdoor Pump Status", "icon": "mdi:pump"},
             {"domain": "sensor", "id": "outdoor/inverter_frequency", "name": "Inverter Frequency", "unit": "Hz", "icon": "mdi:sine-wave"},
-            {"domain": "sensor", "id": "outdoor/evo_current", "name": "EVO Current", "unit": "A", "device_class": "current", "icon": "mdi:current-ac"},
+            {"domain": "sensor", "id": "outdoor/evo", "name": "EVO", "unit": "A", "device_class": "current", "icon": "mdi:current-ac"},
+            {"domain": "sensor", "id": "outdoor/current", "name": "Current", "unit": "A", "device_class": "current", "icon": "mdi:current-ac"},
             {"domain": "sensor", "id": "outdoor/system_param_1", "name": "System Parameter 1", "icon": "mdi:cog"},
             {"domain": "sensor", "id": "outdoor/system_param_2", "name": "System Parameter 2", "icon": "mdi:cog"},
             
@@ -312,8 +313,8 @@ class HNetProtocolDecoder:
             {"domain": "sensor", "id": "outdoor/cycle_pool_active", "name": "Outdoor Cycle POOL Active", "icon": "mdi:power"},
             
             # Sensori data/ora
-            {"domain": "sensor", "id": "indoor/system_datetime", "name": "Indoor System DateTime", "device_class": "timestamp", "icon": "mdi:clock"},
-            {"domain": "sensor", "id": "outdoor/system_datetime", "name": "Outdoor System DateTime", "device_class": "timestamp", "icon": "mdi:clock"},
+            {"domain": "sensor", "id": "indoor/system_datetime", "name": "Indoor System DateTime",  "icon": "mdi:clock"},
+            {"domain": "sensor", "id": "outdoor/system_datetime", "name": "Outdoor System DateTime", "icon": "mdi:clock"},
         ]
         
         # Pubblica ogni entità
@@ -635,7 +636,7 @@ class HNetProtocolDecoder:
             if len(frame) > 18 and frame[18] != 0:
                 self._publish_mqtt_value(f"{device_prefix}/indoor_temperature_1", frame[18], "°C")
             
-            if len(frame) > 26 and frame[26] != 0:
+            if len(frame) > 27 and frame[27] != 0:
                 self._publish_mqtt_value(f"{device_prefix}/indoor_temperature_2", frame[26], "°C")
             
             # Temperatura ambiente impostata
@@ -652,7 +653,7 @@ class HNetProtocolDecoder:
             
             # Data e ora se presente
             if len(frame) > 37:
-                self._decode_datetime(frame[32:38], device_prefix)
+                self._decode_datetime(frame[34:41], device_prefix)
                 
         except Exception as e:
             self.logger.error(f"❌ Errore decodifica parametri aggiuntivi: {e}")
@@ -660,13 +661,15 @@ class HNetProtocolDecoder:
     def _decode_datetime(self, datetime_bytes: List[int], device_prefix: str):
         """Decodifica data e ora dal frame"""
         try:
-            if len(datetime_bytes) >= 6:
-                year = 2000 + datetime_bytes[0] if datetime_bytes[0] != 0 else None
-                month = datetime_bytes[1] if datetime_bytes[1] != 0 else None
-                day = datetime_bytes[2] if datetime_bytes[2] != 0 else None
-                hour = datetime_bytes[3] if datetime_bytes[3] != 0 else None
-                minute = datetime_bytes[4] if datetime_bytes[4] != 0 else None
-                second = datetime_bytes[5] if datetime_bytes[5] != 0 else None
+            self.logger.debug(f"📥 Ricevuto DATETIME: {datetime_bytes[:100]}...")
+            if len(datetime_bytes) >= 7:
+                year = datetime_bytes[0] if datetime_bytes[0] != 0 else None
+                year = year * 100 + datetime_bytes[1] if datetime_bytes[1] != 0 else None
+                month = datetime_bytes[2] if datetime_bytes[2] != 0 else None
+                day = (datetime_bytes[3] - 32) if datetime_bytes[3] != 0 else None
+                hour = datetime_bytes[4] if datetime_bytes[4] != 0 else None
+                minute = datetime_bytes[5] if datetime_bytes[5] != 0 else None
+                second = datetime_bytes[6] if datetime_bytes[6] != 0 else None
                 
                 if all(x is not None for x in [year, month, day, hour, minute, second]):
                     datetime_str = f"{day:02d}/{month:02d}/{year} {hour:02d}:{minute:02d}:{second:02d}"
@@ -733,12 +736,20 @@ class HNetProtocolDecoder:
             if len(frame) > 21 and frame[21] != 0:
                 self._publish_mqtt_value("outdoor/inverter_frequency", frame[21], "Hz")
             
-            # Corrente EVO
-            if len(frame) > 24:
-                evo_current = (frame[24] << 8) | frame[23] if frame[23] != 0 or frame[24] != 0 else 0
-                if evo_current != 0:
-                    current_value = evo_current / 10.0
-                    self._publish_mqtt_value("outdoor/evo_current", current_value, "A")
+            # EVO
+            if len(frame) > 23 and frame[23] != 0:
+                self._publish_mqtt_value("outdoor/evo", frame[23], "..") 
+
+            # Current
+            if len(frame) > 24 and frame[24] != 0:
+                self._publish_mqtt_value("outdoor/current", frame[24], "A") 
+
+
+            # if len(frame) > 24:
+            #    evo_current = (frame[24] << 8) | frame[23] if frame[23] != 0 or frame[24] != 0 else 0
+            #    if evo_current != 0:
+            #        current_value = evo_current / 10.0
+            #        self._publish_mqtt_value("outdoor/evo_current", current_value, "A")
                     
             # Altri parametri sistema
             if len(frame) > 10:

@@ -1,10 +1,13 @@
 # 🏠 Hisense H-NET Protocol Decoder
 
 Decoder per il protocollo Hisense H-NET con supporto Docker e pubblicazione MQTT strutturata.
+La decodifica del protocollo è opera di Alessio Valeri https://www.alessiovaleri.it/index.php/2025/07/09/inside-the-hisense-h-link-protocol-a-reverse-engineering-journey/
+
 
 ## 📋 Caratteristiche
 
 - 🔍 **Decodifica completa** del protocollo H-NET (opcode 0xB1, 0xB6, 0xB8)
+- 📡 **Lettura MQTT** da topic strutturati `P1P2/...`
 - 📡 **Pubblicazione MQTT** su topic strutturati `PDC/...`
 - 🐳 **Container Docker** pronto per il deployment
 - 📊 **Logging avanzato** con rotazione file
@@ -18,8 +21,8 @@ Decoder per il protocollo Hisense H-NET con supporto Docker e pubblicazione MQTT
 
 1. **Clona o estrai l'archivio**
 ```bash
-unzip hisense-hnet-decoder.zip
-cd hisense-hnet-decoder
+git clone https://github.com/rotragit/Hi-Therma.git
+cd Hi-Therma
 ```
 
 2. **Configura le variabili** (copia e modifica `.env`)
@@ -87,12 +90,14 @@ Il decoder supporta configurazione avanzata tramite file YAML con:
 - `dhw_setpoint` - Temperatura ACS
 - `ambient_setpoint` - Temperatura ambiente
 - `system_datetime` - Data/ora sistema
+...
 
 ### 🏭 Unità Esterna (`PDC/outdoor/...`)
 - `status` - Stato connessione
 - `pump_status` - Stato pompa
 - `inverter_frequency` - Frequenza inverter (Hz)
 - `evo_current` - Corrente EVO (A)
+...
 
 ### 🌡️ Sensori (`PDC/sensors/...`)
 - `water_inlet_temperature` - Temp. acqua ingresso
@@ -103,18 +108,11 @@ Il decoder supporta configurazione avanzata tramite file YAML con:
 - `liquid_ui_temperature` - Temp. liquido UI
 - `water_flow` - Flusso acqua
 - `exhaust_temperature` - Temp. scarico
+...
 
-## 📊 Formato Dati
+### HA autodiscovery (`homeassistant/...`)
+- attributi entità per HA
 
-Ogni valore viene pubblicato con formato JSON:
-
-```json
-{
-  "value": 25,
-  "timestamp": "2025-07-26T14:30:00.123456",
-  "unit": "°C"
-}
-```
 
 ## 🔍 Formato Frame Input
 
@@ -199,17 +197,8 @@ mosquitto_sub -h localhost -t 'PDC/+/+' -v
 
 ## 🏡 Integrazione Home Assistant
 
-I topic MQTT sono compatibili con Home Assistant. Esempio configurazione:
-
-```yaml
-sensor:
-  - platform: mqtt
-    name: "PDC Water Temperature"
-    state_topic: "PDC/sensors/water_inlet_temperature"
-    value_template: "{{ value_json.value }}"
-    unit_of_measurement: "°C"
-    device_class: temperature
-```
+I topic MQTT sono compatibili con Home Assistant. 
+Le entità sono presentate nell'autodiscovery di HA
 
 ## 🐛 Troubleshooting
 
