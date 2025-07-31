@@ -255,8 +255,8 @@ class HNetProtocolDecoder:
             {"domain": "sensor", "id": "sensors/heat_exchanger_outlet_temperature", "name": "Heat Exchanger Outlet Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             {"domain": "sensor", "id": "sensors/gas_ui_temperature", "name": "Gas UI Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             {"domain": "sensor", "id": "sensors/liquid_ui_temperature", "name": "Liquid UI Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
-            {"domain": "sensor", "id": "sensors/ambient_temperature", "name": "Ambient Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
-            {"domain": "sensor", "id": "sensors/ambient_temperature_avg", "name": "Ambient Temperature Average", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
+            {"domain": "sensor", "id": "sensors/ambient_temperature", "name": "Outdoor Ambient Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
+            {"domain": "sensor", "id": "sensors/ambient_temperature_avg", "name": "Outdoor Ambient Temperature Average", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             {"domain": "sensor", "id": "sensors/exhaust_temperature", "name": "Exhaust Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             {"domain": "sensor", "id": "sensors/liquid_evaporation_temperature", "name": "Liquid Evaporation Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             
@@ -273,9 +273,12 @@ class HNetProtocolDecoder:
             # Temperature interne
             {"domain": "sensor", "id": "indoor/indoor_temperature_1", "name": "Indoor Temperature 1", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             {"domain": "sensor", "id": "indoor/indoor_temperature_2", "name": "Indoor Temperature 2", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
+
+            # Temperature esterne
             {"domain": "sensor", "id": "outdoor/indoor_temperature_1", "name": "Outdoor Indoor Temperature 1", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
             {"domain": "sensor", "id": "outdoor/indoor_temperature_2", "name": "Outdoor Indoor Temperature 2", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
-            
+            {"domain": "sensor", "id": "outdoor/dhw_temperature", "name": "DHW Temperature", "unit": "°C", "device_class": "temperature", "icon": "mdi:thermometer"},
+
             # Sensori modalità e stato
             {"domain": "sensor", "id": "indoor/operation_command", "name": "Indoor Operation Command", "icon": "mdi:cog"},
             {"domain": "sensor", "id": "outdoor/operation_command", "name": "Outdoor Operation Command", "icon": "mdi:cog"},
@@ -285,7 +288,15 @@ class HNetProtocolDecoder:
             {"domain": "sensor", "id": "outdoor/cycle_status", "name": "Outdoor Cycle Status", "icon": "mdi:power"},
             {"domain": "sensor", "id": "indoor/operation_mode", "name": "Indoor Operation Mode", "icon": "mdi:hvac"},
             {"domain": "sensor", "id": "outdoor/operation_mode", "name": "Outdoor Operation Mode", "icon": "mdi:hvac"},
-            
+
+            {"domain": "sensor", "id": "outdoor/sys_onoff", "name": "System ON/OFF", "icon": "mdi:power"},
+            {"domain": "sensor", "id": "outdoor/dhw_antilegionella", "name": "DHW Anti-Legionella Mode", "icon": "mdi:power"},
+            {"domain": "sensor", "id": "outdoor/dhw_boost", "name": "DHW Boost Mode", "icon": "mdi:flash"},
+
+            {"domain": "sensor", "id": "indoor/sys_onoff", "name": "System ON/OFF", "icon": "mdi:power"},
+            {"domain": "sensor", "id": "indoor/dhw_antilegionella", "name": "DHW Anti-Legionella Mode", "icon": "mdi:power"},
+            {"domain": "sensor", "id": "indoor/dhw_boost", "name": "DHW Boost Mode", "icon": "mdi:flash"},
+
             # Sensori flusso e velocità
             {"domain": "sensor", "id": "sensors/water_flow", "name": "Water Flow", "unit": "L/min", "icon": "mdi:water-pump"},
             {"domain": "sensor", "id": "sensors/water_speed", "name": "Water Speed", "icon": "mdi:speedometer"},
@@ -293,7 +304,7 @@ class HNetProtocolDecoder:
             # Sensori sistema outdoor
             {"domain": "sensor", "id": "outdoor/pump_status", "name": "Outdoor Pump Status", "icon": "mdi:pump"},
             {"domain": "sensor", "id": "outdoor/inverter_frequency", "name": "Inverter Frequency", "unit": "Hz", "icon": "mdi:sine-wave"},
-            {"domain": "sensor", "id": "outdoor/evo", "name": "EVO", "unit": "A", "device_class": "current", "icon": "mdi:current-ac"},
+            {"domain": "sensor", "id": "outdoor/evo", "name": "EVO", "unit": "%", "device_class": "current", "icon": "mdi:current-ac"},
             {"domain": "sensor", "id": "outdoor/current", "name": "Current", "unit": "A", "device_class": "current", "icon": "mdi:current-ac"},
             {"domain": "sensor", "id": "outdoor/system_param_1", "name": "System Parameter 1", "icon": "mdi:cog"},
             {"domain": "sensor", "id": "outdoor/system_param_2", "name": "System Parameter 2", "icon": "mdi:cog"},
@@ -607,22 +618,29 @@ class HNetProtocolDecoder:
                     cycle_on = "ON" in op_description
                     self._publish_mqtt_value(f"{device_prefix}/mode", mode)
                     self._publish_mqtt_value(f"{device_prefix}/cycle_status", "ON" if cycle_on else "OFF")
-            
-            # Temperature e altri parametri
-            if len(frame) > 12 and frame[12] != 0:
-                self._publish_mqtt_value(f"{device_prefix}/water_setpoint", frame[12], "°C")
-            
+
             if len(frame) > 13:
                 op_mode = frame[13]
                 if op_mode in self.OPERATION_MODES:
                     self._publish_mqtt_value(f"{device_prefix}/operation_mode", self.OPERATION_MODES[op_mode])
-            
-            if len(frame) > 14 and frame[14] != 0:
-                self._publish_mqtt_value(f"{device_prefix}/dhw_setpoint", frame[14], "°C")
-            
-            if len(frame) > 15 and frame[15] != 0:
-                self._publish_mqtt_value(f"{device_prefix}/pool_setpoint", frame[15], "°C")
-            
+
+            status_mappings = [
+                (10, f"{device_prefix}/sys_onoff", "--"), # 64 = OFF (pompa spenta) 40 = OFF, 41 = ON
+                (11, f"{device_prefix}/dhw_antilegionella", ""),   # 1 = OFF, 21 = ON
+                (12, f"{device_prefix}/water_setpoint", "°C"),
+                (14, f"{device_prefix}/dhw_setpoint", "°C"),
+                (15, f"{device_prefix}/pool_setpoint", "°C"),
+                (17, f"{device_prefix}/dhw_boost", ""),   # 0 = OFF, 40 = ON
+                (18, f"{device_prefix}/indoor_temperature_1", "°C"),
+                (19, f"{device_prefix}/ambient_setpoint", "°C"),
+                (26, f"{device_prefix}/indoor_temperature_2", "°C"),
+                (33, f"{device_prefix}/dhw_temperature", "°C"),
+            ]
+
+            for byte_idx, topic, unit in status_mappings:
+                if len(frame) > byte_idx and frame[byte_idx] != self.INVALID_SENSOR_VALUE and frame[byte_idx] != 0:
+                    self._publish_mqtt_value(topic, frame[byte_idx], unit)
+
             # Altre temperature e parametri...
             self._decode_additional_status_params(frame, device_prefix)
                     
@@ -632,17 +650,6 @@ class HNetProtocolDecoder:
     def _decode_additional_status_params(self, frame: List[int], device_prefix: str):
         """Decodifica parametri aggiuntivi del messaggio di stato"""
         try:
-            # Temperature interne
-            if len(frame) > 18 and frame[18] != 0:
-                self._publish_mqtt_value(f"{device_prefix}/indoor_temperature_1", frame[18], "°C")
-            
-            if len(frame) > 27 and frame[27] != 0:
-                self._publish_mqtt_value(f"{device_prefix}/indoor_temperature_2", frame[26], "°C")
-            
-            # Temperatura ambiente impostata
-            if len(frame) > 19 and frame[19] != 0:
-                self._publish_mqtt_value(f"{device_prefix}/ambient_setpoint", frame[19], "°C")
-            
             # Selezione ciclo
             if len(frame) > 16:
                 cycle_sel = frame[16]
@@ -666,7 +673,7 @@ class HNetProtocolDecoder:
                 year = datetime_bytes[0] if datetime_bytes[0] != 0 else None
                 year = year * 100 + datetime_bytes[1] if datetime_bytes[1] != 0 else None
                 month = datetime_bytes[2] if datetime_bytes[2] != 0 else None
-                day = (datetime_bytes[3] - 32) if datetime_bytes[3] != 0 else None
+                day = (datetime_bytes[3] & 0x1F) if datetime_bytes[3] != 0 else None    # non so cosa sia il bit 80
                 hour = datetime_bytes[4] if datetime_bytes[4] != 0 else None
                 minute = datetime_bytes[5] if datetime_bytes[5] != 0 else None
                 second = datetime_bytes[6] if datetime_bytes[6] != 0 else None
@@ -695,30 +702,20 @@ class HNetProtocolDecoder:
                 (39, "sensors/gas_ui_temperature", "°C"),
                 (40, "sensors/liquid_ui_temperature", "°C"),
                 (43, "sensors/ambient_temperature", "°C"),
-                (44, "sensors/ambient_temperature_avg", "°C")
+                (44, "sensors/ambient_temperature_avg", "°C"),
+                (65, "sensors/water_flow", "L/min"),
+                (66, "sensors/water_speed", ""),
+                (67, "sensors/exhaust_temperature", "°C"),   # Temperature di scarico ed evaporazione
+                (68, "liquid_evaporation_temperature", "°C")
             ]
             
             for byte_idx, topic, unit in sensor_mappings:
                 if len(frame) > byte_idx and frame[byte_idx] != self.INVALID_SENSOR_VALUE and frame[byte_idx] != 0:
                     self._publish_mqtt_value(topic, frame[byte_idx], unit)
-            
-            # Flusso e velocità acqua
-            if len(frame) > 65 and frame[65] != 0:
-                self._publish_mqtt_value("sensors/water_flow", frame[65], "L/min")
-            
-            if len(frame) > 66 and frame[66] != 0:
-                self._publish_mqtt_value("sensors/water_speed", frame[66])
-            
-            # Temperature di scarico ed evaporazione
-            if len(frame) > 67 and frame[67] != 0:
-                self._publish_mqtt_value("sensors/exhaust_temperature", frame[67], "°C")
-                
-            if len(frame) > 68 and frame[68] != 0:
-                self._publish_mqtt_value("sensors/liquid_evaporation_temperature", frame[68], "°C")
                 
             # Stato pompa
-            if len(frame) > 11:
-                self._publish_mqtt_value("outdoor/pump_status", frame[11])
+            #if len(frame) > 11:
+            #    self._publish_mqtt_value("outdoor/pump_status", frame[11])
                 
         except IndexError as e:
             self.logger.error(f"❌ Errore accesso dati sensori: {e}")
@@ -732,30 +729,17 @@ class HNetProtocolDecoder:
         self.logger.info("⚙️ Decodifica info sistema")
         
         try:
-            # Frequenza inverter
-            if len(frame) > 21 and frame[21] != 0:
-                self._publish_mqtt_value("outdoor/inverter_frequency", frame[21], "Hz")
-            
-            # EVO
-            if len(frame) > 23 and frame[23] != 0:
-                self._publish_mqtt_value("outdoor/evo", frame[23], "..") 
+            info_mappings = [
+                (10, "outdoor/system_param_1", ""),
+                (11, "outdoor/system_param_2", ""),
+                (21, "outdoor/inverter_frequency", "Hz"),
+                (23, "outdoor/evo", "%"),
+                (24, "outdoor/current", "A")
+            ]
 
-            # Current
-            if len(frame) > 24 and frame[24] != 0:
-                self._publish_mqtt_value("outdoor/current", frame[24], "A") 
-
-
-            # if len(frame) > 24:
-            #    evo_current = (frame[24] << 8) | frame[23] if frame[23] != 0 or frame[24] != 0 else 0
-            #    if evo_current != 0:
-            #        current_value = evo_current / 10.0
-            #        self._publish_mqtt_value("outdoor/evo_current", current_value, "A")
-                    
-            # Altri parametri sistema
-            if len(frame) > 10:
-                self._publish_mqtt_value("outdoor/system_param_1", frame[10])
-            if len(frame) > 11:
-                self._publish_mqtt_value("outdoor/system_param_2", frame[11])
+            for byte_idx, topic, unit in info_mappings:
+                if len(frame) > byte_idx and frame[byte_idx] != self.INVALID_SENSOR_VALUE and frame[byte_idx] != 0:
+                    self._publish_mqtt_value(topic, frame[byte_idx], unit)
                     
         except IndexError as e:
             self.logger.error(f"❌ Errore accesso info sistema: {e}")
