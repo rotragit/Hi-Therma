@@ -146,7 +146,10 @@ class HNetProtocolDecoder:
         
         # Handler per file
         if 'file' in self.config['logging']:
-            file_handler = logging.FileHandler(self.config['logging']['file'])
+            file_handler = logging.RotatingFileHandler(self.config['logging']['file'],
+                                                       maxBytes=int(self.config['logging']['max_bytes']),
+                                                       backupCount=self.config['logging']['backup_count']
+                                                       )
             file_handler.setFormatter(logging.Formatter(self.config['logging']['format']))
             logger.addHandler(file_handler)
         

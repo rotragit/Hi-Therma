@@ -38,7 +38,7 @@ logging:
   level: "${LOG_LEVEL:-INFO}"
   format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
   file: "/app/logs/hnet_decoder.log"
-  max_size: "10MB"
+  max_bytes: 10485760
   backup_count: 5
 
 # Configurazione debug
